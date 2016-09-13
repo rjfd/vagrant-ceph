@@ -15,8 +15,8 @@ def common_settings(node, config, name)
 end
 
 def libvirt_settings(provider, config, name)
-        provider.host = 'localhost'
-        provider.username = 'root'
+        provider.host = '192.168.1.89'
+        provider.username = 'rdias'
 
 
         # Use DSA key if available, otherwise, defaults to RSA

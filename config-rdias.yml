@@ -1,0 +1,105 @@
+########################################
+# SLE 12 SP1
+########################################
+SLES_12-SP1:
+  salt:
+    repos:
+      'sle-sdk': 'http://euklid.suse.de/mirror/SuSE/build.suse.de/SUSE/Products/SLE-SDK/12/x86_64/product/'
+      'sle-sdk update': 'http://euklid.suse.de/mirror/SuSE/build.suse.de/SUSE/Updates/SLE-SDK/12/x86_64/update/'
+      'SLE 12 SP1': 'http://euklid.suse.de/mirror/SuSE/build.suse.de/SUSE/Products/SLE-SERVER/12-SP1/x86_64/product/'
+      'SLE 12 SP1 update': 'http://euklid.suse.de/mirror/SuSE/build.suse.de/SUSE/Updates/SLE-SERVER/12-SP1/x86_64/update/'
+      'SES3.0': 'http://download.suse.de/ibs/SUSE:/SLE-12-SP1:/Update:/Products:/SES3/standard/'
+      'systemsmanagement': 'http://download.opensuse.org/repositories/systemsmanagement:/saltstack/SLE_12_SP1'
+      'SLE-12_GA': 'http://download.suse.de/ibs/SUSE:/SLE-12:/GA/standard/'
+      'SLE-12 Update': 'http://download.suse.de/ibs/SUSE:/SLE-12:/Update:/Products/standard/'
+      'utilities': 'http://download.opensuse.org/repositories/utilities/SLE-12-SP1/'
+      'monitoring': 'http://download.opensuse.org/repositories/server:/monitoring/SLE_12_SP1/'
+    packages:
+      all:
+        - vim
+        - vim-data
+        - python-setuptools
+        - salt-minion
+        - htop
+      admin:
+        - ceph-deploy
+        - git
+        - salt-master
+        - ntp
+        - tree
+        - htop
+        - tmux
+    files:
+      all: true
+      admin: true
+    commands:
+      admin:
+        #- zypper -n in -t pattern Basis-Devel
+        - git clone https://github.com/SUSE/DeepSea.git
+        - (cd DeepSea; git checkout wip-rdias-testing)
+        - cp -r DeepSea/srv/* /srv
+        - cp -r DeepSea/etc/* /etc
+        - chown -R salt:salt /srv/pillar/ceph
+        - systemctl start ntpd
+        - systemctl enable ntpd
+        - systemctl start salt-master
+        - systemctl enable salt-master
+        - sleep 10
+        - salt-key -y -A  || exit 0
+        - chmod 1777 /tmp
+      all:
+        #- (cd /tmp/python-ceph-cfg; python setup.py install)
+        - systemctl restart salt-minion
+        - systemctl enable salt-minion
+
+# The small configuration is a typical demo setup of a monitor and three data
+# nodes with two osds each.  This can be ideal for varifying that Vagrant and
+# libvirt are behaving.  Simpler installations can be verified and the ceph
+# command line can be explored.
+#
+# This requires 2.5G RAM and ~7G disk space.  Initial vagrant up is ~13 minutes
+# on a quad core.
+small:
+  description: "admin, 1 monitor, 4 data nodes"
+  nodes:
+    admin:
+      management: 192.168.100.254
+      public:  172.16.1.254
+      cluster: 172.16.2.254
+    mon1:
+      management: 192.168.100.11
+      public:  172.16.1.11
+      cluster: 172.16.2.11
+    data1:
+      management: 192.168.100.21
+      public:  172.16.1.21
+      cluster: 172.16.2.21
+    data2:
+      management: 192.168.100.22
+      public:  172.16.1.22
+      cluster: 172.16.2.22
+    data3:
+      management: 192.168.100.23
+      public:  172.16.1.23
+      cluster: 172.16.2.23
+    data4:
+      management: 192.168.100.24
+      public:  172.16.1.24
+      cluster: 172.16.2.24
+  memory:
+    admin: 2048
+    data1: 1024
+    data2: 1024
+    data3: 1024
+    data4: 1024
+    mon1: 1024
+  disks:
+    data1:
+      hds: 2
+    data2:
+      hds: 2
+    data3:
+      hds: 2
+    data4:
+      hds: 2
+

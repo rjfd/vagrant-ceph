@@ -1,0 +1,15 @@
+{
+   "description" : "            SLE 12 SP1 vagrant base box        ",
+   "name" : "SLES_12-SP1",
+   "versions" : [
+      {
+         "version" : "1.12.0",
+         "providers" : [
+            {
+               "url" : "://w3.suse.de/~rdias/Downloads/SLES12-SP1.box",
+               "name" : "libvirt"
+            }
+         ]
+      }
+   ]
+}
