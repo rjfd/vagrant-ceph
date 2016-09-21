@@ -82,7 +82,7 @@ module Vagrant
     # Calls vagrant provisioning to copy the hosts file to the VM.  This is 
     # done in two steps since the copy is unprivileged.
     def update(node)
-      tmp_hosts = "/home/vagrant/hosts"
+      tmp_hosts = "/home/ec2-user/hosts"
       node.vm.provision 'file', source: "hosts", destination: "#{tmp_hosts}"
       node.vm.provision 'shell', inline: "mv #{tmp_hosts} /etc/hosts"
     end

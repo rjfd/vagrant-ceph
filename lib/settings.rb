@@ -61,6 +61,69 @@ def libvirt_settings(provider, config, name)
 
 end
 
+def aws_settings(provider, override, config, name)
+
+        provider.access_key_id = config[CONFIGURATION]['aws']['access_key_id']
+        provider.secret_access_key = config[CONFIGURATION]['aws']['secret_access_key']
+        provider.keypair_name = config[CONFIGURATION]['aws']['keypair']
+        provider.region = config[CONFIGURATION]['aws']['region']
+        provider.ami = config[CONFIGURATION]['aws']['ami']
+        provider.instance_type = config[CONFIGURATION]['aws']['instace_type']
+        provider.security_groups = config[CONFIGURATION]['aws']['security_group']
+
+        provider.tags = {
+          'Name' => PREFIX + name
+        }
+
+        override.ssh.username = config[CONFIGURATION]['aws']['ssh_username']
+        override.ssh.private_key_path = config[CONFIGURATION]['aws']['ssh_private_key_path']
+
+
+
+        # Memory defaults to 512M, allow specific configurations 
+        #unless (config[CONFIGURATION]['memory'].nil?) then
+        #  unless (config[CONFIGURATION]['memory'][name].nil?) then
+        #    provider.memory = config[CONFIGURATION]['memory'][name]
+        #  end
+        #end
+
+        # Set cpus to 2, allow specific configurations
+        #provider.cpus =  2
+        #unless (config[CONFIGURATION]['cpu'].nil?) then
+        #  unless (config[CONFIGURATION]['cpu'][name].nil?) then
+        #    provider.cpus = config[CONFIGURATION]['cpu'][name] 
+        #  end
+        #end
+
+        # Raw disk images to simulate additional drives on data nodes
+        unless (config[CONFIGURATION]['disks'].nil?) then
+          unless (config[CONFIGURATION]['disks'][name].nil?) then
+            disks = config[CONFIGURATION]['disks'][name]
+            unless (disks['hds'].nil?) then
+              if !disks['size'].nil? then
+                size = disks['size']
+              else
+                size = 5
+              end
+              (1..disks['hds']).each do |d|
+                #provider.storage :file, size: '2G', type: 'raw'
+                provider.block_device_mapping << {
+                  'DeviceName' => "/dev/sd" + ('a'.ord+d).chr,
+                  'Ebs.VolumeSize' => size
+                }
+              end
+            end
+            #unless (disks['ssds'].nil?) then
+            #  (1..disks['ssds']).each do |d|
+            #    provider.storage :file, size: '1G', type: 'raw'
+            #  end
+            #end
+          end
+        end
+
+end
+
+
 def virtbox_settings(provider, config, name)
         unless (config[CONFIGURATION]['memory'].nil?) then
           unless (config[CONFIGURATION]['memory'][name].nil?) then

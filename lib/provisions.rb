@@ -82,12 +82,12 @@ module Vagrant
     # commands in a single call. 
     def setup
       [ 'files/id_ecdsa', 'files/id_ecdsa.pub' ].each do |file|
-        @node.vm.provision 'file', source: file, destination: "/home/vagrant/#{File.basename(file)}"
+        @node.vm.provision 'file', source: file, destination: "/home/ec2-user/#{File.basename(file)}"
       end
       steps = <<-END.gsub(/^ {8}/, '')
         mkdir -p /root/.ssh
-        mv /home/vagrant/id_ecdsa /root/.ssh
-        mv /home/vagrant/id_ecdsa.pub /root/.ssh
+        mv /home/ec2-user/id_ecdsa /root/.ssh
+        mv /home/ec2-user/id_ecdsa.pub /root/.ssh
         cp /root/.ssh/id_ecdsa.pub /root/.ssh/authorized_keys
         chmod 0600 /root/.ssh/id_ecdsa
       END
@@ -131,7 +131,7 @@ module Vagrant
             # check if enabled
             if (@files[subdir]) then
               tar_file = tar(subdir)
-              vm_tar_file = "/home/vagrant/#{File.basename(tar_file)}"
+              vm_tar_file = "/home/ec2-user/#{File.basename(tar_file)}"
               @node.vm.provision 'file', source: tar_file, 
                 destination: vm_tar_file
               untar(vm_tar_file)

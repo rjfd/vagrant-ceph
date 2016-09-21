@@ -11,20 +11,28 @@ require_relative 'lib/settings.rb'
 require_relative 'lib/hosts.rb'
 require_relative 'lib/provisions.rb'
 
-config_file = 'config.yml'
+if ARGV[1] and \
+   (ARGV[1].split('=')[0] == "--provider" or ARGV[2])
+  provider = (ARGV[1].split('=')[1] || ARGV[2])
+else
+  provider = (ENV['VAGRANT_DEFAULT_PROVIDER'] || :virtualbox).to_sym
+end
+puts "Detected #{provider}"
+
+config_file = 'config-aws.yml'
 config = YAML.load_file(config_file)
 
 # Check that the user has an ssh key
 Vagrant::Hosts::check_for_ssh_keys
 
 # Set BOX to one of 'openSUSE-13.2', 'Tumbleweed', 'SLE-12'
-BOX = 'SLE_12-SP1'
+BOX = 'SLES_12-SP1'
 
 # Set INSTALLATION to one of 'ceph-deploy', 'vsm'
 INSTALLATION = 'salt'
 
 # Set CONFIGURATION to one of 'default', 'small', 'iscsi' or 'economical'
-CONFIGURATION = 'fifteen'
+CONFIGURATION = 'aws_test'
 
 raise "Box #{BOX} missing from config.yml" unless config[BOX]
 raise "Installation #{INSTALLATION} missing for box #{BOX} from config.yml" unless config[BOX][INSTALLATION]
@@ -34,7 +42,7 @@ raise "Configuration #{CONFIGURATION} missing from config.yml" unless config[CON
 # (e.g. vagrant-ceph is default, vsm is another git clone with PREFIX='v'
 # hostnames will be 'vadmin', 'vmon1', etc.  Both sets use same address range
 # and cannot run simultaneously.  Each set will consume disk space. )
-PREFIX = ''
+PREFIX = 'rdias-aws-'
 
 # Generates a hosts file
 if (INSTALLATION == 'salt') then
@@ -87,7 +95,11 @@ def provisioning(hosts, node, config, name)
 end
 
 Vagrant.configure("2") do |vconfig|
-  vconfig.vm.box = BOX
+  if provider == "aws"
+    vconfig.vm.box = 'dummy'
+  else
+    vconfig.vm.box = BOX
+  end
 
   # Keep admin at the end for provisioning
   nodes = config[CONFIGURATION]['nodes'].keys.reject{|i| i == 'admin'} 
@@ -104,6 +116,13 @@ Vagrant.configure("2") do |vconfig|
 
       node.vm.provider :virtualbox do |vb|
         virtbox_settings(vb, config, name)
+      end
+
+      node.vm.provider :aws do |aws, override|
+        if provider == "aws"
+          node.vm.synced_folder '.', '/vagrant', :disabled => true
+        end
+        aws_settings(aws, override, config, name)
       end
 
       provisioning(hosts, node, config, name)
@@ -125,6 +144,11 @@ Vagrant.configure("2") do |vconfig|
 
     node.vm.provider :virtualbox do |vb|
       virtbox_settings(vb, config, name)
+    end
+
+    node.vm.provider :aws do |aws, override|
+      node.vm.synced_folder '.', '/vagrant', :disabled => true
+      aws_settings(aws, override, config, name)
     end
 
     provisioning(hosts, node, config, name)

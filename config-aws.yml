@@ -1,0 +1,79 @@
+SLES_12-SP1:
+  salt:
+    repos:
+      'systemsmanagement': 'http://download.opensuse.org/repositories/systemsmanagement:/saltstack/SLE_12_SP1'
+      'utilities': 'http://download.opensuse.org/repositories/utilities/SLE-12-SP1/'
+      'monitoring': 'http://download.opensuse.org/repositories/server:/monitoring/SLE_12_SP1/'
+    packages:
+      all:
+        - vim
+        - vim-data
+        - python-setuptools
+        - salt-minion
+        - htop
+      admin:
+        - git
+        - salt-master
+        - ntp
+        - tree
+        - htop
+        - tmux
+    files:
+      all: true
+      admin: true
+    commands:
+      admin:
+        #- zypper -n in -t pattern Basis-Devel
+        - git clone https://github.com/SUSE/DeepSea.git
+        - (cd DeepSea; git checkout wip-rdias-testing)
+        - cp -r DeepSea/srv/* /srv
+        - cp -r DeepSea/etc/* /etc
+        - chown -R salt:salt /srv/pillar/ceph
+        - systemctl start ntpd
+        - systemctl enable ntpd
+        - systemctl start salt-master
+        - systemctl enable salt-master
+        - sleep 10
+        - salt-key -y -A  || exit 0
+        - chmod 1777 /tmp
+      all:
+        - systemctl restart salt-minion
+        - systemctl enable salt-minion
+
+aws_test:
+  description: "admin, 1 data nodes"
+  aws:
+    access_key_id: AKIAIYNRSHLGTAJYHZYA
+    secret_access_key: 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
+    keypair: rdias
+    region: eu-west-1
+    ami: ami-d44cc5a7
+    instance_type: m1.small
+    security_group: rdias-test
+    ssh_username: ec2-user
+    ssh_private_key_path: ~/.aws/rdias.pem
+  nodes:
+    admin:
+      management: 192.168.100.254
+      public:  172.16.1.254
+      cluster: 172.16.2.254
+    data1:
+      management: 192.168.100.21
+      public:  172.16.1.21
+      cluster: 172.16.2.21
+#    data2:
+#      management: 192.168.100.22
+#      public:  172.16.1.22
+#      cluster: 172.16.2.22
+#    data3:
+#      management: 192.168.100.23
+#      public:  172.16.1.23
+#      cluster: 172.16.2.23
+  disks:
+    data1:
+      hds: 2
+      size: 10
+#    data2:
+#      hds: 2
+#    data3:
+#      hds: 2
